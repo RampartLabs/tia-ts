@@ -1,0 +1,57 @@
+{
+  "name": "tia-ts",
+  "version": "0.2.0",
+  "description": "Typed TypeScript client for celestia-node JSON-RPC, with an in-memory MockCelestia for tests.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "license": "Apache-2.0",
+  "author": "Fearless Oleksii <andrienkoj7@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RampartLabs/tia-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RampartLabs/tia-ts/issues"
+  },
+  "homepage": "https://github.com/RampartLabs/tia-ts#readme",
+  "keywords": [
+    "celestia",
+    "data-availability",
+    "blob",
+    "rollup",
+    "modular",
+    "da"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "tsup": "^8.5.1",
+    "tsx": "^4.22.4",
+    "typescript": "5.7.3",
+    "vitest": "^4.1.8"
+  }
+}

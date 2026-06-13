@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tia-ts — interactive demo</title>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --panel: #16161a;
+    --ink: #ECEAE0;
+    --muted: #8a8a82;
+    --line: #2a2a30;
+    --accent: #7C5CFF;
+    --accent-dim: #2a2348;
+    --ok: #5DCAA5;
+    --mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+    --display: "Space Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--mono); line-height: 1.6;
+    background-image: radial-gradient(circle at 20% -10%, #1a1530 0%, transparent 45%);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 64px 24px 96px; }
+  .tag { color: var(--accent); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; }
+  h1 { font-size: 44px; margin: 12px 0 8px; letter-spacing: -0.02em; font-weight: 700; }
+  h1 .x { color: var(--accent); }
+  .lede { color: var(--muted); font-size: 16px; max-width: 560px; margin-bottom: 8px; }
+  .pill { display:inline-block; border:1px solid var(--line); border-radius: 999px; padding: 3px 12px; font-size:12px; color: var(--muted); margin-top: 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+  @media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin: 0 0 16px; font-weight: 500; }
+  label { display:block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
+  input, textarea {
+    width: 100%; background: #0e0e11; border: 1px solid var(--line); color: var(--ink);
+    border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 14px; resize: vertical;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  button {
+    margin-top: 18px; width: 100%; background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 12px; font-family: var(--mono); font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: transform .06s ease, background .15s ease;
+  }
+  button:hover { background: #6a4cf0; }
+  button:active { transform: translateY(1px); }
+  .out { font-size: 13px; }
+  .row { display:flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: var(--muted); }
+  .row .v { color: var(--ink); text-align: right; word-break: break-all; max-width: 60%; }
+  .v.ok { color: var(--ok); }
+  .empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+  .log { margin-top: 18px; background:#0e0e11; border:1px solid var(--line); border-radius: 8px; padding: 14px; font-size:12px; color: var(--muted); max-height: 180px; overflow:auto; }
+  .log div { padding: 2px 0; }
+  .log .h { color: var(--accent); }
+  footer { margin-top: 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; }
+  footer code { color: var(--ink); background:#0e0e11; padding: 2px 6px; border-radius: 4px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tag">data availability · typescript</div>
+  <h1>tia<span class="x">-ts</span></h1>
+  <p class="lede">Typed client for celestia-node. This demo runs entirely on <strong>MockCelestia</strong> — an in-memory DA layer. No node, no Docker, no testnet. Submit a blob and watch it round-trip.</p>
+  <span class="pill" id="mode">● mock mode — in-browser</span>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Submit a blob</h2>
+      <label for="ns">Namespace (≤ 10 chars)</label>
+      <input id="ns" value="my-rollup" maxlength="10" />
+      <label for="data">Data</label>
+      <textarea id="data" rows="4">{"block":42,"txs":7}</textarea>
+      <button id="go">Submit → retrieve → verify</button>
+      <div class="log" id="log"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Result</h2>
+      <div class="out" id="out">
+        <div class="empty">Submit a blob to see the round-trip.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Same API talks to a real node: <code>new Celestia(url, { token })</code> instead of <code>new MockCelestia()</code>.
+    Full client, types, tests and build spec in the repo.
+  </footer>
+</div>
+
+<script>
+// Inlined minimal MockCelestia so the demo is a single static file.
+// Plain (non-module) script on purpose: opens straight from file:// with a
+// double-click — module scripts are blocked by the browser over file://.
+// The real package exports the identical surface from `tia-ts`.
+function b64(bytes){ let s=""; for(const b of bytes) s+=String.fromCharCode(b); return btoa(s); }
+function digest(bytes){ let h=0x811c9dc5; for(const b of bytes){ h^=b; h=Math.imul(h,0x01000193); } const o=new Uint8Array(8); new DataView(o.buffer).setUint32(0,h>>>0); new DataView(o.buffer).setUint32(4,(h*2654435761)>>>0); return b64(o); }
+function nsV0(str){ const raw=new TextEncoder().encode(str); if(raw.length>10) throw new RangeError("ns ≤ 10 bytes"); const out=new Uint8Array(29); out.set(raw,29-raw.length); return out; }
+function nsHex(bytes){ return "0x"+[...bytes].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+
+class MockCelestia {
+  #store=[]; #height=1; #bal=100000000;
+  #at(h){ return this.#store.filter(s=>s.height===h); }
+  blob = {
+    submit: async (blobs)=>{ this.#height++; for(const bl of blobs){ const c=digest(concat(bl.namespace,bl.data)); this.#store.push({...bl,commitment:c,height:this.#height}); this.#bal-=1000; } return this.#height; },
+    getAll: async (h,nss)=> this.#at(h).filter(s=>nss.some(n=>eq(n,s.namespace))),
+    getProof: async (h,ns,c)=>{ const i=this.#at(h).findIndex(s=>s.commitment===c&&eq(s.namespace,ns)); if(i<0) throw new Error("no blob to prove at height "+h); return [{start:i,end:i+1,nodes:[c]}]; },
+    included: async (h,ns,proof,c)=> proof.some(p=> this.#at(h).some((s,i)=> i>=p.start && i<p.end && s.commitment===c && eq(s.namespace,ns))),
+  };
+  state = { balance: async ()=>({denom:"utia",amount:String(this.#bal)}) };
+  header = { networkHead: async ()=>({height:this.#height}) };
+}
+function concat(a,b){ const o=new Uint8Array(a.length+b.length); o.set(a); o.set(b,a.length); return o; }
+function eq(a,b){ if(a.length!==b.length) return false; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false; return true; }
+
+const da = new MockCelestia();
+const logEl = document.getElementById("log");
+const outEl = document.getElementById("out");
+function log(msg, head){ const d=document.createElement("div"); if(head)d.className="h"; d.textContent=msg; logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight; }
+function esc(s){ return String(s).replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
+function rows(pairs){ outEl.innerHTML = pairs.map(([k,v,ok])=>`<div class="row"><span class="k">${esc(k)}</span><span class="v ${ok?'ok':''}">${esc(v)}</span></div>`).join(""); }
+
+document.getElementById("go").addEventListener("click", async ()=>{
+  logEl.innerHTML=""; 
+  try {
+    const nsStr = document.getElementById("ns").value || "rollup";
+    const ns = nsV0(nsStr);
+    const data = new TextEncoder().encode(document.getElementById("data").value);
+    log("› namespace "+nsHex(ns).slice(0,18)+"…", true);
+    const h = await da.blob.submit([{namespace:ns,data,shareVersion:0}]);
+    log("✓ submitted at height "+h);
+    const blobs = await da.blob.getAll(h, [ns]);
+    log("✓ retrieved "+blobs.length+" blob(s)");
+    const c = blobs[0].commitment;
+    const proof = await da.blob.getProof(h, ns, c);
+    const ok = await da.blob.included(h, ns, proof, c);
+    log("✓ inclusion proof verified: "+ok);
+    const bal = await da.state.balance();
+    rows([
+      ["namespace", nsHex(ns).slice(0,20)+"…"],
+      ["height", h],
+      ["commitment", c],
+      ["retrieved", new TextDecoder().decode(blobs[0].data)],
+      ["proof shares", proof[0].start+".."+proof[0].end],
+      ["inclusion", ok ? "verified ✓" : "failed", ok],
+      ["balance", bal.amount+" "+bal.denom],
+    ]);
+  } catch(e){
+    log("✗ "+e.message);
+    outEl.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+});
+</script>
+</body>
+</html>
