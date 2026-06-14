@@ -7,13 +7,13 @@ Official Celestia clients exist only for Go and Rust. This fills the JS/TS gap w
 ## Install
 
 ```bash
-npm install tia-ts
+npm install @rampartlabs/tia-ts
 ```
 
 ## Quick start
 
 ```typescript
-import { Celestia, Namespace } from "tia-ts";
+import { Celestia, Namespace } from "@rampartlabs/tia-ts";
 
 const da = new Celestia("http://localhost:26658", { token: process.env.CELESTIA_NODE_AUTH_TOKEN });
 const ns = Namespace.v0("my-rollup");
@@ -57,7 +57,7 @@ const sub = da.header.subscribe(onHeader, onError, {
 `MockCelestia` mirrors the same API in memory — deterministic, instant, offline.
 
 ```typescript
-import { MockCelestia, Namespace } from "tia-ts";
+import { MockCelestia, Namespace } from "@rampartlabs/tia-ts";
 
 const da = new MockCelestia();           // swap Celestia → MockCelestia
 const ns = Namespace.v0("test");
