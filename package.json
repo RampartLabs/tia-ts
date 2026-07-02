@@ -30,7 +30,7 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "license": "Apache-2.0",
-  "author": "Fearless Oleksii <andrienkoj7@gmail.com>",
+  "author": "RampartLabs (https://rampartlabs.xyz)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RampartLabs/tia-ts.git"
